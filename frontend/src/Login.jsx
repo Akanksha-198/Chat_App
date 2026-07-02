@@ -24,7 +24,7 @@ export default function Login({ onLogin }) {
       });
       const data = await res.json();
 
-      if (data.success) {
+      if (res.ok && data.success) {
         onLogin(data.user.username, data.token);
       } else {
         setError(data.error || "Login failed.");

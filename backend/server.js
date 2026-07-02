@@ -1,14 +1,4 @@
-/**
- * Chat Application - Backend Server
- * Stack: Node.js + Express + Socket.io
- *
- * Features:
- *  - Dummy login (no password check, just registers a username)
- *  - Real-time messaging via Socket.io
- *  - REST endpoint to fetch chat history (fallback / initial load)
- *  - Timestamps on every message
- *  - In-memory storage (no database needed for this demo)
- */
+
 
 const express = require("express");
 const http = require("http");
@@ -32,7 +22,7 @@ const PORT = process.env.PORT || 5000;
 // ---------- In-memory "database" ----------
 let messages = []; // { id, sender, text, timestamp }
 let onlineUsers = {}; // socketId -> username
-
+let takenUsernames = new Set(); // lowercase usernames currently in use
 // ---------- REST API ----------
 
 // Health check
@@ -43,19 +33,19 @@ app.get("/", (req, res) => {
 // Dummy login: accepts any non-empty username, returns a fake token
 app.post("/login", (req, res) => {
   const { username } = req.body;
-
   if (!username || !username.trim()) {
     return res.status(400).json({ error: "Username is required." });
   }
+  const cleanUsername = username.trim();
+  const key = cleanUsername.toLowerCase();
 
-  // Dummy auth: no password check, no database validation
-  const fakeToken = Buffer.from(`${username}-${Date.now()}`).toString("base64");
+  if (takenUsernames.has(key)) {
+    return res.status(409).json({ error: "This username is already taken. Please choose another one." });
+  }
+  takenUsernames.add(key);
 
-  res.json({
-    success: true,
-    user: { username: username.trim() },
-    token: fakeToken,
-  });
+  const fakeToken = Buffer.from(`${cleanUsername}-${Date.now()}`).toString("base64");
+  res.json({ success: true, user: { username: cleanUsername }, token: fakeToken });
 });
 
 // Fetch chat history (used when the frontend first loads)
@@ -102,6 +92,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     const username = onlineUsers[socket.id];
     delete onlineUsers[socket.id];
+if (username) takenUsernames.delete(username.toLowerCase());    
     io.emit("onlineUsers", Object.values(onlineUsers));
     console.log(`User disconnected: ${username || socket.id}`);
   });
