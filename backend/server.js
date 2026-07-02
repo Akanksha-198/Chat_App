@@ -1,5 +1,3 @@
-
-
 const express = require("express");
 const http = require("http");
 const cors = require("cors");
@@ -12,25 +10,20 @@ app.use(express.json());
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // for demo purposes; restrict in production
+    origin: "*", 
     methods: ["GET", "POST"],
   },
 });
 
 const PORT = process.env.PORT || 5000;
 
-// ---------- In-memory "database" ----------
-let messages = []; // { id, sender, text, timestamp }
-let onlineUsers = {}; // socketId -> username
-let takenUsernames = new Set(); // lowercase usernames currently in use
-// ---------- REST API ----------
-
-// Health check
+let messages = [];
+let onlineUsers = {}; 
+let takenUsernames = new Set(); 
 app.get("/", (req, res) => {
   res.send("Chat server is running.");
 });
 
-// Dummy login: accepts any non-empty username, returns a fake token
 app.post("/login", (req, res) => {
   const { username } = req.body;
   if (!username || !username.trim()) {
@@ -48,23 +41,19 @@ app.post("/login", (req, res) => {
   res.json({ success: true, user: { username: cleanUsername }, token: fakeToken });
 });
 
-// Fetch chat history (used when the frontend first loads)
 app.get("/messages", (req, res) => {
   res.json(messages);
 });
 
-// ---------- Socket.io real-time logic ----------
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  // Client sends their username right after connecting
   socket.on("join", (username) => {
     onlineUsers[socket.id] = username;
     io.emit("onlineUsers", Object.values(onlineUsers));
     console.log(`${username} joined the chat.`);
   });
 
-  // Handle incoming messages
   socket.on("sendMessage", (data) => {
     const message = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -75,11 +64,9 @@ io.on("connection", (socket) => {
 
     messages.push(message);
 
-    // Broadcast to all connected clients (including sender)
     io.emit("receiveMessage", message);
   });
 
-  // Typing indicator (nice-to-have, keeps things simple)
   socket.on("typing", (username) => {
     socket.broadcast.emit("userTyping", username);
   });
@@ -88,7 +75,6 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("userStoppedTyping");
   });
 
-  // Handle disconnect
   socket.on("disconnect", () => {
     const username = onlineUsers[socket.id];
     delete onlineUsers[socket.id];

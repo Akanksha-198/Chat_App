@@ -14,7 +14,6 @@ export default function Chat({ username, onLogout }) {
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // Load history + connect socket on mount
   useEffect(() => {
     fetch(`${SERVER_URL}/messages`)
       .then((res) => res.json())
