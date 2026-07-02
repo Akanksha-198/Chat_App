@@ -1,9 +1,7 @@
 import { io } from "socket.io-client";
 
-// Change this to your deployed backend URL when hosting,
-// or keep as localhost for local testing.
-export const SERVER_URL = "http://localhost:5000";
+export const SERVER_URL = "https://chat-app-wo30.onrender.com";
 
 export const socket = io(SERVER_URL, {
-  autoConnect: false, // we connect manually after login
+  autoConnect: false,
 });
